@@ -1,0 +1,9 @@
+<h1>* Service</h1>
+<pre>
+define service {
+      use                     generic-service,service-pnp
+      service_description     Redis Client
+      check_command           check_redis!6379!'connected_clients,blocked_clients,client_longest_output_list,client_biggest_input_buf'!100,5,~,~!500,10,~,~
+      host_name               vm7
+}	
+</pre>

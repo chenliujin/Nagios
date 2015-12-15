@@ -11,6 +11,12 @@ dont_blame_nrpe=1
 command[check_redis]=/usr/lib64/nagios/plugins/check_redis.pl -H 192.168.0.100 -p $ARG1$ -a $ARG2$ -w $ARG3$ -c $ARG4$ -f
 </pre>
 
+<h1>* 检查代理是否正常</h1>
+<pre>
+# /usr/lib64/nagios/plugins/check_nrpe -H 172.16.64.150 -c check_redis -a 6379
+OK: REDIS 2.8.19 on 172.16.64.150:6379 has 2 databases (db3,db15) with 61 keys, up 4 hours 46 minutes	
+</pre>
+
 <h1>* 定义命令模板</h1>
 <pre>
 # vim /etc/nagios/objects/commands.cfg

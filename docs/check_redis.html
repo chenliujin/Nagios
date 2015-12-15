@@ -1,17 +1,34 @@
 <h1>* NRPE</h1>
 <pre>
+$ yum install -y perl-Redis python-redis
+
+# vim /etc/nagios/nrpe.cfg
+dont_blame_nrpe=1
+
+# service nrpe restart
+
 # vim /etc/nrpe.d/check-redis.cfg
-command[check_redis]=/usr/lib64/nagios/plugins/check_redis.pl
+command[check_redis]=/usr/lib64/nagios/plugins/check_redis.pl -H 192.168.0.100 -p $ARG1$ -a $ARG2$ -w $ARG3$ -c $ARG4$ -f
 </pre>
 
+<h1>* ∂®“Â√¸¡Óƒ£∞Â</h1>
+<pre>
+# vim /etc/nagios/objects/commands.cfg
+define command {
+    command_name    check_redis
+    command_line    $USER1$/check_nrpe -H $HOSTADDRESS$ -c check_redis -a $ARG1$ $ARG2$ $ARG3$ $ARG4$
+}	
+</pre>
 
 <h1>* Service</h1>
 <pre>
 # vim /etc/nagios/conf.d/redis.cfg
 define service {
-      use                     generic-service,service-pnp
-      service_description     Redis Clients
-      check_command           check_nrpe!check_redis!6379!'connected_clients,blocked_clients,client_longest_output_list,client_biggest_input_buf'!100,5,~,~!500,10,~,~
-      host_name               vm7
+    use                     generic-service,service-pnp
+    service_description     Redis Client
+    check_command           check_redis!6379!'connected_clients,blocked_clients,client_longest_output_list,client_biggest_input_buf'!100,5,~,~!500,10,~,~
+    host_name               vm7
+	normal_check_interval   5
+	notification_interval   5
 }	
 </pre>

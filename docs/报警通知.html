@@ -1,4 +1,36 @@
-<h1>* 收不到报警通知</h1>
+<h1>添加联系人</h1>
+<pre>
+# vim /etc/nagios/objects/contacts.cfg
+define contact{
+	contact_name                    chenliujin
+	use                             generic-contact
+	alias                           chenliujin
+	host_notification_commands      notify-host-by-email
+	service_notification_commands   notify-service-by-email
+	email                           liujin.chen@qq.com
+	}
+define contactgroup {
+    contactgroup_name       Web
+    alias                   Web Administrators
+    members                 chenliujin,liujin.chen
+    }	
+</pre>
+
+<h1>指定需要报警的服务</h1>
+<pre>
+define service {
+    use                     generic-service,service-pnp
+    service_description     Redis Clients 10000
+    check_command           check_nrpe!check_redis_connected_clients
+    host_name               172.16.64.150
+    normal_check_interval   1
+    notification_interval   1
+    max_check_attempts      5
+	contact_groups			Web
+}	
+</pre>
+
+<h1>收不到报警通知</h1>
 <pre>
 # vim /etc/nagios/nagios.cfg
 debug_level=32 #32 = Notifications

@@ -1,0 +1,15 @@
+<h1>* 收不到报警通知</h1>
+<pre>
+# vim /etc/nagios/nagios.cfg
+debug_level=32 #32 = Notifications
+
+# vim /var/log/nagios/nagios.debug
+The host is either down or unreachable, so we won't notify contacts about this service.
+
+# 打开主机的 PING 服务
+# vim /etc/sysctl.conf
+net.ipv4.icmp_echo_ignore_all=0
+
+#修改完成后执行sysctl -p使新配置生效
+# sysctl -p
+</pre>

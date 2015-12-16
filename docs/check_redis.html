@@ -1,6 +1,6 @@
 <h1>* NRPE</h1>
 <pre>
-$ yum install -y perl-Redis python-redis
+# yum install -y perl-Redis
 
 # vim /etc/nrpe.d/check-redis.cfg
 command[check_redis_connected_clients]=/usr/lib64/nagios/plugins/check_redis.pl -H 127.0.0.1 -p 6379 -a 'connected_clients' -w ~ -c ~ -f

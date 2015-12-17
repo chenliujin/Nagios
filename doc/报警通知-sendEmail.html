@@ -18,12 +18,12 @@ define command{
 # 'notify-host-by-email' command definition
 define command{
         command_name    notify-host-by-email
-		command_line	/usr/bin/sendEmail -l /tmp/sendEmail.log -f sent@tinydeal.com -t $CONTACTEMAIL$ -s email-smtp.us-east-1.amazonaws.com -u "$NOTIFICATIONTYPE$ Host Alert: $HOSTNAME$ is $HOSTSTATE$" -xu AKIAJRHPVLGRBW543BAA -xp AmmkAPERzX2Y5vqJGBKmc2PCtWv4f4tFvHoqpHFa8Mok -m "***** Nagios *****\\n\\nNotification Type: $NOTIFICATIONTYPE$\\nHost: $HOSTNAME$\\nState: $HOSTSTATE$\\nAddress: $HOSTADDRESS$\\nInfo: $HOSTOUTPUT$\\n\\nDate/Time: $LONGDATETIME$\\n"
+		command_line	/usr/bin/sendEmail -l /tmp/sendEmail.log -f liujin.chen@qq.com -t $CONTACTEMAIL$ -s smtp.qq.com -u "$NOTIFICATIONTYPE$ Host Alert: $HOSTNAME$ is $HOSTSTATE$" -xu liujin.chen@qq.com -xp 123456 -m "***** Nagios *****\\n\\nNotification Type: $NOTIFICATIONTYPE$\\nHost: $HOSTNAME$\\nState: $HOSTSTATE$\\nAddress: $HOSTADDRESS$\\nInfo: $HOSTOUTPUT$\\n\\nDate/Time: $LONGDATETIME$\\n"
         }
 
 # 'notify-service-by-email' command definition
 define command{
         command_name    notify-service-by-email
-        command_line	/usr/bin/sendEmail -l /tmp/sendEmail.log -f sent@tinydeal.com -t $CONTACTEMAIL$ -s email-smtp.us-east-1.amazonaws.com -u "$NOTIFICATIONTYPE$ Service Alert: $HOSTALIAS$/$SERVICEDESC$ is $SERVICESTATE$" -xu AKIAJRHPVLGRBW543BAA -xp AmmkAPERzX2Y5vqJGBKmc2PCtWv4f4tFvHoqpHFa8Mok -m "***** Nagios *****\\n\\nNotification Type: $NOTIFICATIONTYPE$\\n\\nService: $SERVICEDESC$\\nHost: $HOSTALIAS$\\nAddress: $HOSTADDRESS$\\nState: $SERVICESTATE$\\n\\nDate/Time: $LONGDATETIME$\\n\\nAdditional Info:\\n\\n$SERVICEOUTPUT$\\n"
+        command_line	/usr/bin/sendEmail -l /tmp/sendEmail.log -f liujin.chen@qq.com -t $CONTACTEMAIL$ -s smtp.qq.com -u "$NOTIFICATIONTYPE$ Service Alert: $HOSTALIAS$/$SERVICEDESC$ is $SERVICESTATE$" -xu liujin.chen@qq.com -xp 123456 -m "***** Nagios *****\\n\\nNotification Type: $NOTIFICATIONTYPE$\\n\\nService: $SERVICEDESC$\\nHost: $HOSTALIAS$\\nAddress: $HOSTADDRESS$\\nState: $SERVICESTATE$\\n\\nDate/Time: $LONGDATETIME$\\n\\nAdditional Info:\\n\\n$SERVICEOUTPUT$\\n"
         }	
 </pre>

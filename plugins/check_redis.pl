@@ -746,15 +746,6 @@ EOT
 #	       In 2010-2012 plugins started to get support for ;warn;crit output of thresholds in perf,
 #	       as specified in the guidelines.
 #
-# [Early 2012] Code from check_memcached had been used as a base for check_memcached and then
-#	       check_redis plugins with some of the latest threshold code from check_netstat
-#	       with more updates. Starting with check_redis the code from check_options() and
-#	       from main part of plugin that was very similar across my plugins were separated
-#	       into their own functions. KNOWN_STATS_VARS array was introduced as well to be
-#	       able to properly add UOM symbol ('c', '%', 's', 'ms', 'B', 'KB') to perfout.
-#	       check_memcached and check_redis also included support for calculating rate of
-#	       variables in a similar way to how its been done in check_snmp_netint
-#
 # [0.1 - July 17, 2012] In 0.6 release of check_redis.pl support had been added for long options
 #	       with special threshold line syntax:
 #                --option=WARN:threshold,CRIT:threshold,ABSENT:OK|WARNING|CRITICAL|UNKNOWN,DISPLAY:YES|NO,PERF:YES|NO
@@ -2491,47 +2482,54 @@ sub options_setaccess {
         close $file;
         print 'Password file is empty' and exit $ERRORS{"UNKNOWN"} if !$PASSWORD;
     }
-    if (defined($o_password) && $o_password) {
-	$PASSWORD = $o_password;
-    }
+    if (defined($o_password) && $o_password) { $PASSWORD = $o_password; }
+
     $HOSTNAME = $o_host if defined($o_host);
     $PORT     = $o_port if defined($o_port);
     $TIMEOUT  = $o_timeout if defined($o_timeout);
     $DATABASE = $o_database if defined($o_database);
 }
 
-# parse command line options
+
+####################################################################################################
+####################################################################################################
+##
+##  get input params
+##  checck_redis.pl -H localhost -p 6379
+##
+####################################################################################################
+####################################################################################################
 sub check_options {
     my $opt;
     my $nlib = shift;
     my %Options = ();
     Getopt::Long::Configure("bundling");
     GetOptions(\%Options, 
-   	'v:s'	=> \$o_verb,		'verbose:s' => \$o_verb, "debug:s" => \$o_verb,
-        'h'     => \$o_help,            'help'          => \$o_help,
-        'H:s'   => \$o_host,            'hostname:s'    => \$o_host,
-        'p:i'   => \$o_port,            'port:i'        => \$o_port,
-        'C:s'   => \$o_pwfile,          'credentials:s' => \$o_pwfile,
-        'x:s'   => \$o_password,	'password:s'	=> \$o_password,
-	'D:s'	=> \$o_database,	'database:s'	=> \$o_database,
-        't:i'   => \$o_timeout,         'timeout:i'     => \$o_timeout,
-        'V'     => \$o_version,         'version'       => \$o_version,
-	'a:s'   => \$o_variables,       'variables:s'   => \$o_variables,
-        'c:s'   => \$o_crit,            'critical:s'    => \$o_crit,
-        'w:s'   => \$o_warn,            'warn:s'        => \$o_warn,
-	'f:s'   => \$o_perf,            'perfparse:s'   => \$o_perf,
-	'A:s'   => \$o_perfvars,        'perfvars:s'    => \$o_perfvars,
-        'T:s'   => \$o_timecheck,       'response_time:s' => \$o_timecheck,
-        'R:s'   => \$o_hitrate,         'hitrate:s'     => \$o_hitrate,
-        'r:s'   => \$o_repdelay,        'replication_delay:s' => \$o_repdelay,
-        'P:s'   => \$o_prevperf,        'prev_perfdata:s' => \$o_prevperf,
-        'E:s'   => \$o_prevtime,        'prev_checktime:s'=> \$o_prevtime,
-        'm:s'   => \$o_memutilization,  'memory_utilization:s' => \$o_memutilization,
-	'M:s'	=> \$o_totalmemory,	'total_memory:s' => \$o_totalmemory,
-	'q=s'	=> \@o_querykey,	'query=s'	 => \@o_querykey,
-	'o=s'	=> \@o_check,		'check|option=s' => \@o_check,
-	'rate_label:s'	=> \$o_ratelabel,
-	map { ($_) } $nlib->additional_options_list()
+   		'v:s'				=> \$o_verb,					'verbose:s' 			=> \$o_verb, 				"debug:s" => \$o_verb,
+        'h'     			=> \$o_help,            		'help'          		=> \$o_help,
+        'H:s'   			=> \$o_host,            		'hostname:s'    		=> \$o_host,
+        'p:i'   			=> \$o_port,            		'port:i'        		=> \$o_port,
+        'C:s'   			=> \$o_pwfile,          		'credentials:s' 		=> \$o_pwfile,
+        'x:s'   			=> \$o_password,				'password:s'			=> \$o_password,
+		'D:s'				=> \$o_database,				'database:s'			=> \$o_database,
+        't:i'   			=> \$o_timeout,         		'timeout:i'     		=> \$o_timeout,
+        'V'     			=> \$o_version,         		'version'       		=> \$o_version,
+		'a:s'   			=> \$o_variables,       		'variables:s'   		=> \$o_variables,
+        'c:s'   			=> \$o_crit,            		'critical:s'    		=> \$o_crit,
+        'w:s'   			=> \$o_warn,            		'warn:s'        		=> \$o_warn,
+		'f:s'   			=> \$o_perf,            		'perfparse:s'   		=> \$o_perf,
+		'A:s'   			=> \$o_perfvars,        		'perfvars:s'    		=> \$o_perfvars,
+        'T:s'   			=> \$o_timecheck,       		'response_time:s' 		=> \$o_timecheck,
+        'R:s'   			=> \$o_hitrate,         		'hitrate:s'     		=> \$o_hitrate,
+        'r:s'   			=> \$o_repdelay,        		'replication_delay:s' 	=> \$o_repdelay,
+        'P:s'   			=> \$o_prevperf,        		'prev_perfdata:s' 		=> \$o_prevperf,
+        'E:s'   			=> \$o_prevtime,        		'prev_checktime:s'		=> \$o_prevtime,
+        'm:s'   			=> \$o_memutilization,  		'memory_utilization:s' 	=> \$o_memutilization,
+		'M:s'				=> \$o_totalmemory,				'total_memory:s' 		=> \$o_totalmemory,
+		'q=s'				=> \@o_querykey,				'query=s'	 			=> \@o_querykey,
+		'o=s'				=> \@o_check,					'check|option=s' 		=> \@o_check,
+		'rate_label:s'		=> \$o_ratelabel,
+		map { ($_) } $nlib->additional_options_list()
     );
 
     ($o_rprefix,$o_rsuffix)=split(/,/,$o_ratelabel) if defined($o_ratelabel) && $o_ratelabel ne '';
@@ -2653,12 +2651,8 @@ $start_time = [ Time::HiRes::gettimeofday() ] if defined($o_timecheck);
 
 $redis = Redis-> new ( server => $dsn, 'debug' => (defined($o_verb))?1:0 );
 
-if ($PASSWORD) {
-    $redis->auth($PASSWORD);
-}
-if ($DATABASE) {
-    $redis->select($DATABASE);
-}
+if ($PASSWORD) { $redis->auth($PASSWORD); }
+if ($DATABASE) { $redis->select($DATABASE); }
 
 if (!$redis) {
   print "CRITICAL ERROR - Redis Library - can not connect to '$HOSTNAME' on port $PORT\n"; 
@@ -2769,33 +2763,29 @@ $redis->quit;
 my $total_keys=0;
 my $total_expires=0;
 foreach $vnam (keys %{$stats}) {
-     $vval = $stats->{$vnam};
-     if (defined($vval)) {
-    	$nlib->verb("Stats Line: $vnam = $vval");
-	if (exists($KNOWN_STATUS_VARS{$vnam}) && $KNOWN_STATUS_VARS{$vnam}[1] eq 'VERSION') {
-		$dbversion .= $vval;
-	}
-	elsif ($vnam =~ /^db\d+$/) {
-		$dbs{$vnam}= {'name'=>$vnam};
-		foreach (split(/,/,$vval)) {
-			my ($k,$d) = split(/=/,$_);
-			$nlib->add_data($vnam.'_'.$k,$d); 
-			$dbs{$vnam}{$k}=$d;
-			$nlib->verb(" - stats data added: ".$vnam.'_'.$k.' = '.$d);
-			$total_keys+=$d if $k eq 'keys' && Naglio::isnum($d);
-			$total_expires+=$d if $k eq 'expires' && Naglio::isnum($d);
+	$vval = $stats->{$vnam};
+	if (defined($vval)) {
+		$nlib->verb("Stats Line: $vnam = $vval");
+		if (exists($KNOWN_STATUS_VARS{$vnam}) && $KNOWN_STATUS_VARS{$vnam}[1] eq 'VERSION') {
+			$dbversion .= $vval;
+		} elsif ($vnam =~ /^db\d+$/) {
+			$dbs{$vnam}= {'name'=>$vnam};
+			foreach (split(/,/,$vval)) {
+				my ($k,$d) = split(/=/,$_);
+				$nlib->add_data($vnam.'_'.$k,$d); 
+				$dbs{$vnam}{$k}=$d;
+				$nlib->verb(" - stats data added: ".$vnam.'_'.$k.' = '.$d);
+				$total_keys		+= $d 	if $k eq 'keys' 	&& Naglio::isnum($d);
+				$total_expires	+= $d 	if $k eq 'expires' 	&& Naglio::isnum($d);
+			}
+		} elsif ($vnam =~ /~slave/) {
+			# TODO TODO TODO TODO
+		} else {
+			$nlib->add_data($vnam, $vval);
 		}
+	} else {
+		$nlib->verb("Stats Data: $vnam = NULL");
 	}
-	elsif ($vnam =~ /~slave/) {
-		# TODO TODO TODO TODO
-	}
-	else {
-		$nlib->add_data($vnam, $vval);
-   	}
-     }
-     else {
-        $nlib->verb("Stats Data: $vnam = NULL");
-     }
 }
 $nlib->verb("Calculated Data: total_keys=".$total_keys);
 $nlib->verb("Calculated Data: total_expires=".$total_expires);

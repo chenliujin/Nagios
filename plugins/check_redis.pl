@@ -456,13 +456,18 @@ my %KNOWN_STATUS_VARS = (
 	 'vm_enabled' => [ 'status', 'BOOLEAN', '' ],
 	 'uptime_in_seconds' => [ 'status', 'COUNTER', 'c' ],
 	 'total_connections_received' => [ 'status', 'COUNTER', 'c', 'Total Connections Received' ],
-	 'used_memory_rss' => [ 'status', 'GAUGE', 'B', 'Resident Set Size, Used Memory in Bytes' ],  	# RSS - Resident Set Size
 	 'used_cpu_sys' => [ 'status', 'GAUGE', '', 'Main Process Used System CPU' ],
 	 'redis_git_dirty' => [ 'status', 'BOOLEAN', '', 'Git Dirty Set Bit' ],
 	 'loading' => [ 'status', 'BOOLEAN', '' ],
 	 'latest_fork_usec' => [ 'status', 'GAUGE', '' ],
 	 'connected_clients' => [ 'status', 'GAUGE', '', 'Total Number of Connected Clients' ],
-	 'used_memory_peak_human' => [ 'status', 'GAUGE', '' ],
+
+	 'used_memory' 				=> [ 'status', 'GAUGE', '' ], # change to MB
+	 'used_memory_human' 		=> [ 'status', 'GAUGE', '' ], # used_memory have change to MB, no need anymore
+	 'used_memory_rss' 			=> [ 'status', 'GAUGE', 'B', 'Resident Set Size, Used Memory in Bytes' ],  	# RSS - Resident Set Size
+	 'used_memory_peak' 		=> [ 'status', 'GAUGE', '' ], # change to MB
+	 'used_memory_peak_human' 	=> [ 'status', 'GAUGE', '' ], # used_memory_peak have change to MB, no need anymore
+
 	 'mem_allocator' => [ 'status', 'TEXTINFO', '' ],
 	 'uptime_in_days' => [ 'status', 'COUNTER', 'c', 'Total Uptime in Days' ],
 	 'keyspace_hits' => [ 'status', 'COUNTER', 'c', 'Total Keyspace Hits' ],
@@ -478,7 +483,6 @@ my %KNOWN_STATUS_VARS = (
 	 'redis_git_sha1' => [ 'status', 'TEXTDATA', '' ],
 	 'used_cpu_user_children' => [ 'status', 'GAUGE', '', 'Child Processes Used User CPU' ],
 	 'process_id' => [ 'status', 'GAUGE', '' ],
-	 'used_memory_human' => [ 'status', 'GAUGE', '' ],
 	 'keyspace_misses' => [ 'status', 'COUNTER', 'c', 'Keyspace Misses' ],
 	 'used_cpu_user' => [ 'status', 'GAUGE', '', 'Main Process Used User CPU' ],
 	 'total_commands_processed' => [ 'status', 'COUNTER', 'c', 'Total Number of Commands Processed from Start' ],
@@ -489,7 +493,6 @@ my %KNOWN_STATUS_VARS = (
 	 'evicted_keys' => [ 'status', 'COUNTER', 'c', 'Total Number of Evicted Keys' ],
 	 'bgrewriteaof_in_progress' => [ 'status','BOOLEAN', '' ],
 	 'expired_keys' => [ 'status', 'COUNTER', 'c', 'Total Number of Expired Keys' ],
-	 'used_memory_peak' => [ 'status', 'GAUGE', 'B' ],
 	 'connected_slaves' => [ 'status', 'GAUGE', '', 'Number of Connected Slaves' ],
 	 'used_cpu_sys_children' => [ 'status', 'GAUGE', '', 'Child Processed Used System CPU' ],
 	 'master_host' => [ 'status', 'TEXTINFO', '' ],
@@ -1950,24 +1953,24 @@ sub options_startprocessing {
 		}
 	} 
     }
-    if (defined($o_warn) || defined($o_crit) || defined($o_variables)) {
-	if (defined($o_variables)) {
-	  @{$ar_varsL}=split( /,/ , lc $o_variables );
-	  if (defined($o_warn)) {
-	     $o_warn.="~" if $o_warn =~ /,$/;
-	     @{$ar_warnLv}=split( /,/ , lc $o_warn );
-	  }
-	  if (defined($o_crit)) {
-	     $o_crit.="~" if $o_crit =~ /,$/;
-    	     @{$ar_critLv}=split( /,/ , lc $o_crit );
-	  }
+	if (defined($o_warn) || defined($o_crit) || defined($o_variables)) {
+		if (defined($o_variables)) {
+			@{$ar_varsL}=split( /,/ , lc $o_variables );
+			if (defined($o_warn)) {
+				$o_warn.="~" if $o_warn =~ /,$/;
+				@{$ar_warnLv}=split( /,/ , lc $o_warn );
+			}
+			if (defined($o_crit)) {
+				$o_crit.="~" if $o_crit =~ /,$/;
+				@{$ar_critLv}=split( /,/ , lc $o_crit );
+			}
+		}
+		else {
+			print "Specifying warning or critical thresholds requires specifying list of variables to be checked\n";
+			if (defined($self)) { $self->usage(); }
+			exit $ERRORS{"UNKNOWN"};
+		}
 	}
-	else {
-	  print "Specifying warning or critical thresholds requires specifying list of variables to be checked\n";
-	  if (defined($self)) { $self->usage(); }
-	  exit $ERRORS{"UNKNOWN"};
-	}
-    }
     # this is a special loop to check stats-variables options such as "connected_clients=WARN:warning,CRIT:critical"
     # which are specified as long options (new extended threshold line spec introduced in check_redis and check_memcached)
     my ($vname,$vname2) = (undef,undef);
@@ -2247,9 +2250,10 @@ sub main_checkvars {
 			# below is where threshold info gets added to perfdata
 			if ((exists($thresholds->{$avar}{'WARN'}[5]) && $thresholds->{$avar}{'WARN'}[5] ne '') ||
 			    (exists($thresholds->{$avar}{'CRIT'}[5]) && $thresholds->{$avar}{'CRIT'}[5] ne '')) {
-				$perf_str = ';';
+				$perf_str  = ';';
 				$perf_str .= $thresholds->{$avar}{'WARN'}[5] if exists($thresholds->{$avar}{'WARN'}[5]) && $thresholds->{$avar}{'WARN'}[5] ne '';
 				$perf_str .= ';'.$thresholds->{$avar}{'CRIT'}[5] if exists($thresholds->{$avar}{'CRIT'}[5]) && $thresholds->{$avar}{'CRIT'}[5] ne '';
+
 				$self->set_perfdata($dvar, $perf_str, '', "ADD");
 			}
 		}
@@ -2323,14 +2327,14 @@ sub main_perfvars {
 #  @RETURNS       : string of perfdata starting with "|"
 #  @PRIVACY & USE : PUBLIC, To be called during plugin output. Must be used as an object instance function
 sub perfdata {
-    my $self=shift;
+	my $self=shift;
 
-    $self->main_perfvars() if !exists($self->{'_called_main_perfvars'});
-    my $perfdata = trim($self->{'_perfdata'});
-    if ($perfdata ne '') {
-	return " | " . $perfdata;
-    }
-    return "";
+	$self->main_perfvars() if !exists($self->{'_called_main_perfvars'});
+	my $perfdata = trim($self->{'_perfdata'});
+	if ($perfdata ne '') {
+		return " | " . $perfdata;
+	}
+	return "";
 }
 
 #  @DESCRIPTION   : This function is called after data is available and calculates rate variables
@@ -2759,7 +2763,13 @@ for (my $i=0; $i<scalar(@query);$i++) {
 # end redis session
 $redis->quit;
 
-# load stats data into internal hash array
+####################################################################################################
+####################################################################################################
+##
+## redis info 
+##
+####################################################################################################
+####################################################################################################
 my $total_keys=0;
 my $total_expires=0;
 foreach $vnam (keys %{$stats}) {
@@ -2857,32 +2867,37 @@ if (defined($o_repdelay) && defined($nlib->vardata('master_last_io_seconds_ago')
     }
 }
 
-# Memory Use Utilization
+####################################################################################################
+####################################################################################################
+##
+## Memory
+##
+####################################################################################################
+####################################################################################################
 if (defined($o_memutilization) && defined($nlib->vardata('used_memory_rss'))) {
-    if (defined($o_totalmemory)) {
-        $nlib->add_data('memory_utilization',$nlib->vardata('used_memory_rss')/$o_totalmemory*100);
-	$nlib->verb('memory utilization % : '.$nlib->vardata('memory_utilization').' = '.$nlib->vardata('used_memory_rss').' (used_memory_rss) / '.$o_totalmemory.' * 100');
-    }
-    elsif ($o_memutilization ne '') {
-	print "ERROR: Can not calculate memory utilization if you do not specify total memory on a system (-M option)\n";
-	print_usage();
-	exit $ERRORS{"UNKNOWN"};
-    }
-    if (defined($o_perf) && defined($nlib->vardata('memory_utilization'))) {
-	$nlib->set_perfdata('memory_utilization',sprintf(" memory_utilization=%.4f", $nlib->vardata('memory_utilization')),'%');
-    }
-    if (defined($nlib->vardata('used_memory_human')) && defined($nlib->vardata('used_memory_peak_human'))) {
-	my $sdata="memory use is ".$nlib->vardata('used_memory_human')." (";
-	$sdata.='peak '.$nlib->vardata('used_memory_peak_human');
-	if (defined($nlib->vardata('memory_utilization'))) {
-		$sdata.= sprintf(", %.2f%% of max", $nlib->vardata('memory_utilization'));
+	if (defined($o_totalmemory)) {
+		$nlib->add_data('memory_utilization',$nlib->vardata('used_memory_rss')/$o_totalmemory*100);
+		$nlib->verb('memory utilization % : '.$nlib->vardata('memory_utilization').' = '.$nlib->vardata('used_memory_rss').' (used_memory_rss) / '.$o_totalmemory.' * 100');
+	} elsif ($o_memutilization ne '') {
+		print "ERROR: Can not calculate memory utilization if you do not specify total memory on a system (-M option)\n";
+		print_usage();
+		exit $ERRORS{"UNKNOWN"};
 	}
-	if (defined($nlib->vardata('mem_fragmentation_ratio'))) {
-		$sdata.=", fragmentation ".$nlib->vardata('mem_fragmentation_ratio').'%';
+	if (defined($o_perf) && defined($nlib->vardata('memory_utilization'))) {
+		$nlib->set_perfdata('memory_utilization',sprintf(" memory_utilization=%.4f", $nlib->vardata('memory_utilization')),'%');
 	}
-	$sdata.=")";
-	$nlib->addto_statusdata_output('memory_utilization',$sdata);
-    }
+	if (defined($nlib->vardata('used_memory_human')) && defined($nlib->vardata('used_memory_peak_human'))) {
+		my $sdata="memory use is ".$nlib->vardata('used_memory_human')." (";
+		$sdata.='peak '.$nlib->vardata('used_memory_peak_human');
+		if (defined($nlib->vardata('memory_utilization'))) {
+			$sdata.= sprintf(", %.2f%% of max", $nlib->vardata('memory_utilization'));
+		}
+		if (defined($nlib->vardata('mem_fragmentation_ratio'))) {
+			$sdata.=", fragmentation ".$nlib->vardata('mem_fragmentation_ratio').'%';
+		}
+		$sdata.=")";
+		$nlib->addto_statusdata_output('memory_utilization',$sdata);
+	}
 }
 
 # Check thresholds in all variables and prepare status and performance data for output

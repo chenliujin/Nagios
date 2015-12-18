@@ -47,7 +47,7 @@ OK: REDIS 2.8.19 on 172.16.64.150:6379 has 2 databases (db3,db15) with 61 keys, 
 # vim /etc/nagios/conf.d/redis.cfg
 define service {
     use                     generic-service,service-pnp
-    service_description     Redis Clients
+    service_description     Redis Memory
     check_command           check_nrpe!check_redis_connected_clients
     host_name               vm7
 	normal_check_interval   5

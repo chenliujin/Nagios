@@ -1,18 +1,48 @@
-<h1>* NRPE</h1>
+<h1>依赖包</h1>
 <pre>
-# yum install -y perl-Redis
+# yum install -y perl-Redis	
+</pre>
 
+<h1>connected_clients</h1>
+<h2>* NRPE</h2>
+<pre>
 # vim /etc/nrpe.d/check-redis.cfg
 command[check_redis_connected_clients]=/usr/lib64/nagios/plugins/check_redis.pl -H 127.0.0.1 -p 6379 -a 'connected_clients' -w ~ -c ~ -f
 </pre>
 
-<h1>* 检查代理是否工作</h1>
+<h2>* 检查代理是否工作</h2>
 <pre>
-# /usr/lib64/nagios/plugins/check_nrpe -H 172.16.64.150 -c check_redis_connected_clients
+# /usr/lib64/nagios/plugins/check_nrpe -H 127.0.0.1 -c check_redis_connected_clients
 OK: REDIS 2.4.10 on 127.0.0.1:6381 has 1 databases (db0) with 10515 keys, up 14 days 16 hours - connected_clients is 26 | connected_clients=26
 </pre>
 
-<h1>* Service</h1>
+<h2>* Service</h2>
+<pre>
+# vim /etc/nagios/conf.d/redis.cfg
+define service {
+    use                     generic-service,service-pnp
+    service_description     Redis Clients
+    check_command           check_nrpe!check_redis_connected_clients
+    host_name               vm7
+	normal_check_interval   5
+	notification_interval   5
+}	
+</pre>
+
+<h1>Memory</h1>
+<h2>* NRPE</h2>
+<pre>
+# vim /etc/nrpe.d/check-redis.cfg
+command[check_redis_memory]=/usr/lib64/nagios/plugins/check_redis.pl -H 127.0.0.1 -p 6379 -a 'used_memory,used_memory_peak' -w ~ -c ~ -f
+</pre>
+
+<h2>* 检查代理是否工作</h2>
+<pre>
+# /usr/lib64/nagios/plugins/check_nrpe -H 127.0.0.1 -c check_redis_memory
+OK: REDIS 2.8.19 on 172.16.64.150:6379 has 2 databases (db3,db15) with 61 keys, up 6 hours 58 minutes - used_memory is 854392, used_memory_peak is 855416 | used_memory=854392 used_memory_peak=855416
+</pre>
+
+<h2>* Service</h2>
 <pre>
 # vim /etc/nagios/conf.d/redis.cfg
 define service {

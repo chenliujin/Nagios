@@ -421,10 +421,10 @@ use Getopt::Long qw(:config no_ignore_case);
 use Redis;
 
 # default hostname, port, database, user and password, see NOTES above
-my $HOSTNAME= 'localhost';
-my $PORT=     6379;
-my $PASSWORD= undef;
-my $DATABASE= undef;
+my $HOSTNAME	= 'localhost';
+my $PORT		= 6379;
+my $PASSWORD	= undef;
+my $DATABASE	= undef;
 
 # Add path to additional libraries if necessary
 use lib '/usr/lib64/nagios/plugins';
@@ -460,13 +460,15 @@ my %KNOWN_STATUS_VARS = (
 	 'redis_git_dirty' => [ 'status', 'BOOLEAN', '', 'Git Dirty Set Bit' ],
 	 'loading' => [ 'status', 'BOOLEAN', '' ],
 	 'latest_fork_usec' => [ 'status', 'GAUGE', '' ],
-	 'connected_clients' => [ 'status', 'GAUGE', '', 'Total Number of Connected Clients' ],
 
-	 'used_memory' 				=> [ 'status', 'GAUGE', '' ], # change to MB
-	 'used_memory_human' 		=> [ 'status', 'GAUGE', '' ], # used_memory have change to MB, no need anymore
+	 'connected_clients' 		=> [ 'status', 'GAUGE', '', 'Total Number of Connected Clients' ],
+
+	 # Memory
+	 'used_memory' 				=> [ 'status', 'GAUGE', '' ],
+	 'used_memory_human' 		=> [ 'status', 'GAUGE', '' ],
 	 'used_memory_rss' 			=> [ 'status', 'GAUGE', 'B', 'Resident Set Size, Used Memory in Bytes' ],  	# RSS - Resident Set Size
-	 'used_memory_peak' 		=> [ 'status', 'GAUGE', '' ], # change to MB
-	 'used_memory_peak_human' 	=> [ 'status', 'GAUGE', '' ], # used_memory_peak have change to MB, no need anymore
+	 'used_memory_peak' 		=> [ 'status', 'GAUGE', '' ],
+	 'used_memory_peak_human' 	=> [ 'status', 'GAUGE', '' ],
 
 	 'mem_allocator' => [ 'status', 'TEXTINFO', '' ],
 	 'uptime_in_days' => [ 'status', 'COUNTER', 'c', 'Total Uptime in Days' ],
@@ -860,7 +862,7 @@ sub lib_init {
 		_statuscode => "OK",		# final status code
 		_statusinfo => "",		# if there is an error, this has human info about what it is
 		_statusdata => "",		# if there is no error but we want some data in status line, this var gets it
-		_perfdata => "",		# this variable collects performance data line
+		_perfdata 	=> "",		# this variable collects performance data line
 		_saveddata => "",		# collects saved data (for next plugin re-run, not implimented yet)
 		_init_args => \%other_args,
                 # copy of data from plugin option variables
@@ -1540,43 +1542,41 @@ sub var_pattern_match {
 #  @RETURNS       : nothing (future: 1 on success, 0 on error)
 #  @PRIVACY & USE : PUBLIC, Must be used as an object instance function
 sub add_data {
-    my ($self, $dnam, $dval, $anam) = @_;
-    my $thresholds = $self->{'_thresholds'};
-    my $dataresults = $self-> {'_dataresults'};
-    my $datavars = $self -> {'_datavars'};
-    my $perfVars = $self->{'_perfVars'};
+	my ($self, $dnam, $dval, $anam) = @_;
+	my $thresholds 	= $self->{'_thresholds'};
+	my $dataresults = $self->{'_dataresults'};
+	my $datavars 	= $self->{'_datavars'};
+	my $perfVars 	= $self->{'_perfVars'};
 
-    # determine what plugin options-specified var & threshold this data corresponds to
-    if (!defined($anam)) {
-	if ($self->{'enable_regex_match'} == 0) {
-	    $anam = $dnam;
+	# determine what plugin options-specified var & threshold this data corresponds to
+	if (!defined($anam)) {
+		if ($self->{'enable_regex_match'} == 0) {
+			$anam = $dnam;
+		} else {
+			$anam = $self->var_pattern_match($dnam);
+			$anam = $dnam if !defined($anam);
+		}
 	}
-	else {
-	    $anam = $self->var_pattern_match($dnam);
-	    $anam = $dnam if !defined($anam);
+	# set dataresults
+	if (exists($dataresults->{$dnam})) {
+		$dataresults->{$dnam}[0] = $dval;
+		$dataresults->{$dnam}[4] = $anam if defined($anam);
+	} else {
+		$dataresults->{$dnam} = [$dval, 0, 0, '', $anam];
 	}
-    }
-    # set dataresults
-    if (exists($dataresults->{$dnam})) {
-        $dataresults->{$dnam}[0] = $dval;
-        $dataresults->{$dnam}[4] = $anam if defined($anam);
-    }
-    else {
-        $dataresults->{$dnam} = [$dval, 0, 0, '', $anam];
-    }
-    # reverse map array
-    $datavars->{$anam} = [] if !exists($datavars->{$anam});
-    push @{$datavars->{$anam}}, $dnam;
-    # setperf if all variables go to perf
-    if ($self->{'all_variables_perf'} == 1) {
-        $thresholds->{$anam}={} if !exists($thresholds->{$anam});
-	$thresholds->{$anam}{'PERF_DATALIST'} = [] if !exists($thresholds->{$anam}{'PERF_DATALIST'});
-	push @{$thresholds->{$anam}{'PERF_DATALIST'}}, $dnam;
-	if (!defined($thresholds->{$anam}{'PERF'})) {
-	    push @{$perfVars}, $anam;
-	    $thresholds->{$anam}{'PERF'} = 'YES';
+	# reverse map array
+	$datavars->{$anam} = [] if !exists($datavars->{$anam});
+	push @{$datavars->{$anam}}, $dnam;
+	# setperf if all variables go to perf
+	if ($self->{'all_variables_perf'} == 1) {
+		$thresholds->{$anam}={} if !exists($thresholds->{$anam});
+		$thresholds->{$anam}{'PERF_DATALIST'} = [] if !exists($thresholds->{$anam}{'PERF_DATALIST'});
+		push @{$thresholds->{$anam}{'PERF_DATALIST'}}, $dnam;
+		if (!defined($thresholds->{$anam}{'PERF'})) {
+			push @{$perfVars}, $anam;
+			$thresholds->{$anam}{'PERF'} = 'YES';
+		}
 	}
-    }
 }
 
 #  @DESCRIPTION   : Accessor function that gets variable data
@@ -2781,8 +2781,8 @@ foreach $vnam (keys %{$stats}) {
 		} elsif ($vnam =~ /^db\d+$/) {
 			$dbs{$vnam}= {'name'=>$vnam};
 			foreach (split(/,/,$vval)) {
-				my ($k,$d) = split(/=/,$_);
-				$nlib->add_data($vnam.'_'.$k,$d); 
+				my ($k, $d) = split(/=/,$_);
+				$nlib->add_data($vnam.'_'.$k, $d); 
 				$dbs{$vnam}{$k}=$d;
 				$nlib->verb(" - stats data added: ".$vnam.'_'.$k.' = '.$d);
 				$total_keys		+= $d 	if $k eq 'keys' 	&& Naglio::isnum($d);
@@ -2799,8 +2799,8 @@ foreach $vnam (keys %{$stats}) {
 }
 $nlib->verb("Calculated Data: total_keys=".$total_keys);
 $nlib->verb("Calculated Data: total_expires=".$total_expires);
-$nlib->add_data('total_keys',$total_keys);
-$nlib->add_data('total_expires',$total_expires);
+$nlib->add_data('total_keys', $total_keys);
+$nlib->add_data('total_expires', $total_expires);
 
 # Response Time
 if (defined($o_timecheck)) {

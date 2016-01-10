@@ -124,9 +124,12 @@ command[check_cpu]=/usr/lib64/nagios/plugins/check_cpu
 
 <h3>2）安装nagios-plugins</h3>
 <pre>
-$ wget ftp://195.220.108.108/linux/epel/6/x86_64/nagios-plugins-lcgdm-common-0.9.5-1.el6.x86_64.rpm
 $ yum install -y python python-dateutil
-$ yum install -y nagios-plugins-lcgdm-common #rpm -ivh nagios-plugins-lcgdm-common-0.9.5-1.el6.x86_64.rpm
+$ yum install -y ftp://195.220.108.108/linux/epel/6/x86_64/nagios-plugins-nrpe-2.15-7.el6.x86_64.rpm
+$ yum install -y nagios-plugins-lcgdm-common 
+
+# 或者下载安装包进行安装
+# yum install -y  ftp://195.220.108.108/linux/epel/6/x86_64/nagios-plugins-lcgdm-common-0.9.5-1.el6.x86_64.rpm
 </pre>
 
 <p>nagios-plugins-lcgdm-common集成了如下插件：<br>
@@ -172,8 +175,8 @@ define service {
 <p>配置Nagios数据输出接口：</p>
 <pre>$ vim /etc/nagios/nagios.cfg 
 process_performance_data=1				#默认为0，修改为1
-host_perfdata_command=process-host-perfdata		#注释开头#号
-service_perfdata_command=process-service-perfdata	#注释开头#号</pre>
+host_perfdata_command=process-host-perfdata		#去掉开头注释
+service_perfdata_command=process-service-perfdata	#去掉开头注释</pre>
 <p>替换commands.cfg命令process-service-perfdata为以下内容：</p>
 <pre>$ vim /etc/nagios/objects/commands.cfg 
 # 'process-host-perfdata' command definition
@@ -190,17 +193,17 @@ define command{
 <p>在模板配置文件中添加图表图标模板：</p>
 <pre>$ vim /etc/nagios/objects/templates.cfg 
 define host {
-name          host-pnp
-action_url    /pnp4nagios/index.php/graph?host=$HOSTNAME$&srv=_HOST_' class='tips' rel='/pnp4nagios/index.php/popup?host=$HOSTNAME$&srv=_HOST_
-register   0
+    name          host-pnp
+    action_url    /pnp4nagios/index.php/graph?host=$HOSTNAME$&srv=_HOST_' class='tips' rel='/pnp4nagios/index.php/popup?host=$HOSTNAME$&srv=_HOST_
+    register   0
 }
 define service {
-name         service-pnp
-action_url   /pnp4nagios/index.php/graph?host=$HOSTNAME$&srv=$SERVICEDESC$' class='tips' rel='/pnp4nagios/index.php/popup?host=$HOSTNAME$&srv=$SERVICEDESC$
-register   0
+    name         service-pnp
+    action_url   /pnp4nagios/index.php/graph?host=$HOSTNAME$&srv=$SERVICEDESC$' class='tips' rel='/pnp4nagios/index.php/popup?host=$HOSTNAME$&srv=$SERVICEDESC$
+    register   0
 }</pre>
 <p>复制鼠标悬停图标显示文件：</p>
-<pre>$ cp /usr/share/doc/pnp4nagios-0.6.25/contrib/ssi/* /usr/share/nagios/html/ssi</pre>
+<pre>$ cp /usr/share/doc/pnp4nagios-0.6.25/contrib/ssi/* /usr/share/nagios/html/ssi/</pre>
 <p>在监控主机或服务中调用图表模板：</p>
 
 <h3>* 启动服务</h3>

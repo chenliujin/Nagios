@@ -421,10 +421,10 @@ use Getopt::Long qw(:config no_ignore_case);
 use Redis;
 
 # default hostname, port, database, user and password, see NOTES above
-my $HOSTNAME= 'localhost';
-my $PORT=     6379;
-my $PASSWORD= undef;
-my $DATABASE= undef;
+my $HOSTNAME	= 'localhost';
+my $PORT		= 6379;
+my $PASSWORD	= undef;
+my $DATABASE	= undef;
 
 # Add path to additional libraries if necessary
 use lib '/usr/lib64/nagios/plugins';
@@ -456,13 +456,20 @@ my %KNOWN_STATUS_VARS = (
 	 'vm_enabled' => [ 'status', 'BOOLEAN', '' ],
 	 'uptime_in_seconds' => [ 'status', 'COUNTER', 'c' ],
 	 'total_connections_received' => [ 'status', 'COUNTER', 'c', 'Total Connections Received' ],
-	 'used_memory_rss' => [ 'status', 'GAUGE', 'B', 'Resident Set Size, Used Memory in Bytes' ],  	# RSS - Resident Set Size
 	 'used_cpu_sys' => [ 'status', 'GAUGE', '', 'Main Process Used System CPU' ],
 	 'redis_git_dirty' => [ 'status', 'BOOLEAN', '', 'Git Dirty Set Bit' ],
 	 'loading' => [ 'status', 'BOOLEAN', '' ],
 	 'latest_fork_usec' => [ 'status', 'GAUGE', '' ],
-	 'connected_clients' => [ 'status', 'GAUGE', '', 'Total Number of Connected Clients' ],
-	 'used_memory_peak_human' => [ 'status', 'GAUGE', '' ],
+
+	 'connected_clients' 		=> [ 'status', 'GAUGE', '', 'Total Number of Connected Clients' ],
+
+	 # Memory
+	 'used_memory' 				=> [ 'status', 'GAUGE', '' ],
+	 'used_memory_human' 		=> [ 'status', 'GAUGE', '' ],
+	 'used_memory_rss' 			=> [ 'status', 'GAUGE', 'B', 'Resident Set Size, Used Memory in Bytes' ],  	# RSS - Resident Set Size
+	 'used_memory_peak' 		=> [ 'status', 'GAUGE', '' ],
+	 'used_memory_peak_human' 	=> [ 'status', 'GAUGE', '' ],
+
 	 'mem_allocator' => [ 'status', 'TEXTINFO', '' ],
 	 'uptime_in_days' => [ 'status', 'COUNTER', 'c', 'Total Uptime in Days' ],
 	 'keyspace_hits' => [ 'status', 'COUNTER', 'c', 'Total Keyspace Hits' ],
@@ -478,7 +485,6 @@ my %KNOWN_STATUS_VARS = (
 	 'redis_git_sha1' => [ 'status', 'TEXTDATA', '' ],
 	 'used_cpu_user_children' => [ 'status', 'GAUGE', '', 'Child Processes Used User CPU' ],
 	 'process_id' => [ 'status', 'GAUGE', '' ],
-	 'used_memory_human' => [ 'status', 'GAUGE', '' ],
 	 'keyspace_misses' => [ 'status', 'COUNTER', 'c', 'Keyspace Misses' ],
 	 'used_cpu_user' => [ 'status', 'GAUGE', '', 'Main Process Used User CPU' ],
 	 'total_commands_processed' => [ 'status', 'COUNTER', 'c', 'Total Number of Commands Processed from Start' ],
@@ -489,7 +495,6 @@ my %KNOWN_STATUS_VARS = (
 	 'evicted_keys' => [ 'status', 'COUNTER', 'c', 'Total Number of Evicted Keys' ],
 	 'bgrewriteaof_in_progress' => [ 'status','BOOLEAN', '' ],
 	 'expired_keys' => [ 'status', 'COUNTER', 'c', 'Total Number of Expired Keys' ],
-	 'used_memory_peak' => [ 'status', 'GAUGE', 'B' ],
 	 'connected_slaves' => [ 'status', 'GAUGE', '', 'Number of Connected Slaves' ],
 	 'used_cpu_sys_children' => [ 'status', 'GAUGE', '', 'Child Processed Used System CPU' ],
 	 'master_host' => [ 'status', 'TEXTINFO', '' ],
@@ -746,15 +751,6 @@ EOT
 #	       In 2010-2012 plugins started to get support for ;warn;crit output of thresholds in perf,
 #	       as specified in the guidelines.
 #
-# [Early 2012] Code from check_memcached had been used as a base for check_memcached and then
-#	       check_redis plugins with some of the latest threshold code from check_netstat
-#	       with more updates. Starting with check_redis the code from check_options() and
-#	       from main part of plugin that was very similar across my plugins were separated
-#	       into their own functions. KNOWN_STATS_VARS array was introduced as well to be
-#	       able to properly add UOM symbol ('c', '%', 's', 'ms', 'B', 'KB') to perfout.
-#	       check_memcached and check_redis also included support for calculating rate of
-#	       variables in a similar way to how its been done in check_snmp_netint
-#
 # [0.1 - July 17, 2012] In 0.6 release of check_redis.pl support had been added for long options
 #	       with special threshold line syntax:
 #                --option=WARN:threshold,CRIT:threshold,ABSENT:OK|WARNING|CRITICAL|UNKNOWN,DISPLAY:YES|NO,PERF:YES|NO
@@ -866,7 +862,7 @@ sub lib_init {
 		_statuscode => "OK",		# final status code
 		_statusinfo => "",		# if there is an error, this has human info about what it is
 		_statusdata => "",		# if there is no error but we want some data in status line, this var gets it
-		_perfdata => "",		# this variable collects performance data line
+		_perfdata 	=> "",		# this variable collects performance data line
 		_saveddata => "",		# collects saved data (for next plugin re-run, not implimented yet)
 		_init_args => \%other_args,
                 # copy of data from plugin option variables
@@ -1546,43 +1542,41 @@ sub var_pattern_match {
 #  @RETURNS       : nothing (future: 1 on success, 0 on error)
 #  @PRIVACY & USE : PUBLIC, Must be used as an object instance function
 sub add_data {
-    my ($self, $dnam, $dval, $anam) = @_;
-    my $thresholds = $self->{'_thresholds'};
-    my $dataresults = $self-> {'_dataresults'};
-    my $datavars = $self -> {'_datavars'};
-    my $perfVars = $self->{'_perfVars'};
+	my ($self, $dnam, $dval, $anam) = @_;
+	my $thresholds 	= $self->{'_thresholds'};
+	my $dataresults = $self->{'_dataresults'};
+	my $datavars 	= $self->{'_datavars'};
+	my $perfVars 	= $self->{'_perfVars'};
 
-    # determine what plugin options-specified var & threshold this data corresponds to
-    if (!defined($anam)) {
-	if ($self->{'enable_regex_match'} == 0) {
-	    $anam = $dnam;
+	# determine what plugin options-specified var & threshold this data corresponds to
+	if (!defined($anam)) {
+		if ($self->{'enable_regex_match'} == 0) {
+			$anam = $dnam;
+		} else {
+			$anam = $self->var_pattern_match($dnam);
+			$anam = $dnam if !defined($anam);
+		}
 	}
-	else {
-	    $anam = $self->var_pattern_match($dnam);
-	    $anam = $dnam if !defined($anam);
+	# set dataresults
+	if (exists($dataresults->{$dnam})) {
+		$dataresults->{$dnam}[0] = $dval;
+		$dataresults->{$dnam}[4] = $anam if defined($anam);
+	} else {
+		$dataresults->{$dnam} = [$dval, 0, 0, '', $anam];
 	}
-    }
-    # set dataresults
-    if (exists($dataresults->{$dnam})) {
-        $dataresults->{$dnam}[0] = $dval;
-        $dataresults->{$dnam}[4] = $anam if defined($anam);
-    }
-    else {
-        $dataresults->{$dnam} = [$dval, 0, 0, '', $anam];
-    }
-    # reverse map array
-    $datavars->{$anam} = [] if !exists($datavars->{$anam});
-    push @{$datavars->{$anam}}, $dnam;
-    # setperf if all variables go to perf
-    if ($self->{'all_variables_perf'} == 1) {
-        $thresholds->{$anam}={} if !exists($thresholds->{$anam});
-	$thresholds->{$anam}{'PERF_DATALIST'} = [] if !exists($thresholds->{$anam}{'PERF_DATALIST'});
-	push @{$thresholds->{$anam}{'PERF_DATALIST'}}, $dnam;
-	if (!defined($thresholds->{$anam}{'PERF'})) {
-	    push @{$perfVars}, $anam;
-	    $thresholds->{$anam}{'PERF'} = 'YES';
+	# reverse map array
+	$datavars->{$anam} = [] if !exists($datavars->{$anam});
+	push @{$datavars->{$anam}}, $dnam;
+	# setperf if all variables go to perf
+	if ($self->{'all_variables_perf'} == 1) {
+		$thresholds->{$anam}={} if !exists($thresholds->{$anam});
+		$thresholds->{$anam}{'PERF_DATALIST'} = [] if !exists($thresholds->{$anam}{'PERF_DATALIST'});
+		push @{$thresholds->{$anam}{'PERF_DATALIST'}}, $dnam;
+		if (!defined($thresholds->{$anam}{'PERF'})) {
+			push @{$perfVars}, $anam;
+			$thresholds->{$anam}{'PERF'} = 'YES';
+		}
 	}
-    }
 }
 
 #  @DESCRIPTION   : Accessor function that gets variable data
@@ -1959,24 +1953,24 @@ sub options_startprocessing {
 		}
 	} 
     }
-    if (defined($o_warn) || defined($o_crit) || defined($o_variables)) {
-	if (defined($o_variables)) {
-	  @{$ar_varsL}=split( /,/ , lc $o_variables );
-	  if (defined($o_warn)) {
-	     $o_warn.="~" if $o_warn =~ /,$/;
-	     @{$ar_warnLv}=split( /,/ , lc $o_warn );
-	  }
-	  if (defined($o_crit)) {
-	     $o_crit.="~" if $o_crit =~ /,$/;
-    	     @{$ar_critLv}=split( /,/ , lc $o_crit );
-	  }
+	if (defined($o_warn) || defined($o_crit) || defined($o_variables)) {
+		if (defined($o_variables)) {
+			@{$ar_varsL}=split( /,/ , lc $o_variables );
+			if (defined($o_warn)) {
+				$o_warn.="~" if $o_warn =~ /,$/;
+				@{$ar_warnLv}=split( /,/ , lc $o_warn );
+			}
+			if (defined($o_crit)) {
+				$o_crit.="~" if $o_crit =~ /,$/;
+				@{$ar_critLv}=split( /,/ , lc $o_crit );
+			}
+		}
+		else {
+			print "Specifying warning or critical thresholds requires specifying list of variables to be checked\n";
+			if (defined($self)) { $self->usage(); }
+			exit $ERRORS{"UNKNOWN"};
+		}
 	}
-	else {
-	  print "Specifying warning or critical thresholds requires specifying list of variables to be checked\n";
-	  if (defined($self)) { $self->usage(); }
-	  exit $ERRORS{"UNKNOWN"};
-	}
-    }
     # this is a special loop to check stats-variables options such as "connected_clients=WARN:warning,CRIT:critical"
     # which are specified as long options (new extended threshold line spec introduced in check_redis and check_memcached)
     my ($vname,$vname2) = (undef,undef);
@@ -2256,9 +2250,10 @@ sub main_checkvars {
 			# below is where threshold info gets added to perfdata
 			if ((exists($thresholds->{$avar}{'WARN'}[5]) && $thresholds->{$avar}{'WARN'}[5] ne '') ||
 			    (exists($thresholds->{$avar}{'CRIT'}[5]) && $thresholds->{$avar}{'CRIT'}[5] ne '')) {
-				$perf_str = ';';
+				$perf_str  = ';';
 				$perf_str .= $thresholds->{$avar}{'WARN'}[5] if exists($thresholds->{$avar}{'WARN'}[5]) && $thresholds->{$avar}{'WARN'}[5] ne '';
 				$perf_str .= ';'.$thresholds->{$avar}{'CRIT'}[5] if exists($thresholds->{$avar}{'CRIT'}[5]) && $thresholds->{$avar}{'CRIT'}[5] ne '';
+
 				$self->set_perfdata($dvar, $perf_str, '', "ADD");
 			}
 		}
@@ -2332,14 +2327,14 @@ sub main_perfvars {
 #  @RETURNS       : string of perfdata starting with "|"
 #  @PRIVACY & USE : PUBLIC, To be called during plugin output. Must be used as an object instance function
 sub perfdata {
-    my $self=shift;
+	my $self=shift;
 
-    $self->main_perfvars() if !exists($self->{'_called_main_perfvars'});
-    my $perfdata = trim($self->{'_perfdata'});
-    if ($perfdata ne '') {
-	return " | " . $perfdata;
-    }
-    return "";
+	$self->main_perfvars() if !exists($self->{'_called_main_perfvars'});
+	my $perfdata = trim($self->{'_perfdata'});
+	if ($perfdata ne '') {
+		return " | " . $perfdata;
+	}
+	return "";
 }
 
 #  @DESCRIPTION   : This function is called after data is available and calculates rate variables
@@ -2491,47 +2486,54 @@ sub options_setaccess {
         close $file;
         print 'Password file is empty' and exit $ERRORS{"UNKNOWN"} if !$PASSWORD;
     }
-    if (defined($o_password) && $o_password) {
-	$PASSWORD = $o_password;
-    }
+    if (defined($o_password) && $o_password) { $PASSWORD = $o_password; }
+
     $HOSTNAME = $o_host if defined($o_host);
     $PORT     = $o_port if defined($o_port);
     $TIMEOUT  = $o_timeout if defined($o_timeout);
     $DATABASE = $o_database if defined($o_database);
 }
 
-# parse command line options
+
+####################################################################################################
+####################################################################################################
+##
+##  get input params
+##  checck_redis.pl -H localhost -p 6379
+##
+####################################################################################################
+####################################################################################################
 sub check_options {
     my $opt;
     my $nlib = shift;
     my %Options = ();
     Getopt::Long::Configure("bundling");
     GetOptions(\%Options, 
-   	'v:s'	=> \$o_verb,		'verbose:s' => \$o_verb, "debug:s" => \$o_verb,
-        'h'     => \$o_help,            'help'          => \$o_help,
-        'H:s'   => \$o_host,            'hostname:s'    => \$o_host,
-        'p:i'   => \$o_port,            'port:i'        => \$o_port,
-        'C:s'   => \$o_pwfile,          'credentials:s' => \$o_pwfile,
-        'x:s'   => \$o_password,	'password:s'	=> \$o_password,
-	'D:s'	=> \$o_database,	'database:s'	=> \$o_database,
-        't:i'   => \$o_timeout,         'timeout:i'     => \$o_timeout,
-        'V'     => \$o_version,         'version'       => \$o_version,
-	'a:s'   => \$o_variables,       'variables:s'   => \$o_variables,
-        'c:s'   => \$o_crit,            'critical:s'    => \$o_crit,
-        'w:s'   => \$o_warn,            'warn:s'        => \$o_warn,
-	'f:s'   => \$o_perf,            'perfparse:s'   => \$o_perf,
-	'A:s'   => \$o_perfvars,        'perfvars:s'    => \$o_perfvars,
-        'T:s'   => \$o_timecheck,       'response_time:s' => \$o_timecheck,
-        'R:s'   => \$o_hitrate,         'hitrate:s'     => \$o_hitrate,
-        'r:s'   => \$o_repdelay,        'replication_delay:s' => \$o_repdelay,
-        'P:s'   => \$o_prevperf,        'prev_perfdata:s' => \$o_prevperf,
-        'E:s'   => \$o_prevtime,        'prev_checktime:s'=> \$o_prevtime,
-        'm:s'   => \$o_memutilization,  'memory_utilization:s' => \$o_memutilization,
-	'M:s'	=> \$o_totalmemory,	'total_memory:s' => \$o_totalmemory,
-	'q=s'	=> \@o_querykey,	'query=s'	 => \@o_querykey,
-	'o=s'	=> \@o_check,		'check|option=s' => \@o_check,
-	'rate_label:s'	=> \$o_ratelabel,
-	map { ($_) } $nlib->additional_options_list()
+   		'v:s'				=> \$o_verb,					'verbose:s' 			=> \$o_verb, 				"debug:s" => \$o_verb,
+        'h'     			=> \$o_help,            		'help'          		=> \$o_help,
+        'H:s'   			=> \$o_host,            		'hostname:s'    		=> \$o_host,
+        'p:i'   			=> \$o_port,            		'port:i'        		=> \$o_port,
+        'C:s'   			=> \$o_pwfile,          		'credentials:s' 		=> \$o_pwfile,
+        'x:s'   			=> \$o_password,				'password:s'			=> \$o_password,
+		'D:s'				=> \$o_database,				'database:s'			=> \$o_database,
+        't:i'   			=> \$o_timeout,         		'timeout:i'     		=> \$o_timeout,
+        'V'     			=> \$o_version,         		'version'       		=> \$o_version,
+		'a:s'   			=> \$o_variables,       		'variables:s'   		=> \$o_variables,
+        'c:s'   			=> \$o_crit,            		'critical:s'    		=> \$o_crit,
+        'w:s'   			=> \$o_warn,            		'warn:s'        		=> \$o_warn,
+		'f:s'   			=> \$o_perf,            		'perfparse:s'   		=> \$o_perf,
+		'A:s'   			=> \$o_perfvars,        		'perfvars:s'    		=> \$o_perfvars,
+        'T:s'   			=> \$o_timecheck,       		'response_time:s' 		=> \$o_timecheck,
+        'R:s'   			=> \$o_hitrate,         		'hitrate:s'     		=> \$o_hitrate,
+        'r:s'   			=> \$o_repdelay,        		'replication_delay:s' 	=> \$o_repdelay,
+        'P:s'   			=> \$o_prevperf,        		'prev_perfdata:s' 		=> \$o_prevperf,
+        'E:s'   			=> \$o_prevtime,        		'prev_checktime:s'		=> \$o_prevtime,
+        'm:s'   			=> \$o_memutilization,  		'memory_utilization:s' 	=> \$o_memutilization,
+		'M:s'				=> \$o_totalmemory,				'total_memory:s' 		=> \$o_totalmemory,
+		'q=s'				=> \@o_querykey,				'query=s'	 			=> \@o_querykey,
+		'o=s'				=> \@o_check,					'check|option=s' 		=> \@o_check,
+		'rate_label:s'		=> \$o_ratelabel,
+		map { ($_) } $nlib->additional_options_list()
     );
 
     ($o_rprefix,$o_rsuffix)=split(/,/,$o_ratelabel) if defined($o_ratelabel) && $o_ratelabel ne '';
@@ -2653,12 +2655,8 @@ $start_time = [ Time::HiRes::gettimeofday() ] if defined($o_timecheck);
 
 $redis = Redis-> new ( server => $dsn, 'debug' => (defined($o_verb))?1:0 );
 
-if ($PASSWORD) {
-    $redis->auth($PASSWORD);
-}
-if ($DATABASE) {
-    $redis->select($DATABASE);
-}
+if ($PASSWORD) { $redis->auth($PASSWORD); }
+if ($DATABASE) { $redis->select($DATABASE); }
 
 if (!$redis) {
   print "CRITICAL ERROR - Redis Library - can not connect to '$HOSTNAME' on port $PORT\n"; 
@@ -2765,42 +2763,44 @@ for (my $i=0; $i<scalar(@query);$i++) {
 # end redis session
 $redis->quit;
 
-# load stats data into internal hash array
+####################################################################################################
+####################################################################################################
+##
+## redis info 
+##
+####################################################################################################
+####################################################################################################
 my $total_keys=0;
 my $total_expires=0;
 foreach $vnam (keys %{$stats}) {
-     $vval = $stats->{$vnam};
-     if (defined($vval)) {
-    	$nlib->verb("Stats Line: $vnam = $vval");
-	if (exists($KNOWN_STATUS_VARS{$vnam}) && $KNOWN_STATUS_VARS{$vnam}[1] eq 'VERSION') {
-		$dbversion .= $vval;
-	}
-	elsif ($vnam =~ /^db\d+$/) {
-		$dbs{$vnam}= {'name'=>$vnam};
-		foreach (split(/,/,$vval)) {
-			my ($k,$d) = split(/=/,$_);
-			$nlib->add_data($vnam.'_'.$k,$d); 
-			$dbs{$vnam}{$k}=$d;
-			$nlib->verb(" - stats data added: ".$vnam.'_'.$k.' = '.$d);
-			$total_keys+=$d if $k eq 'keys' && Naglio::isnum($d);
-			$total_expires+=$d if $k eq 'expires' && Naglio::isnum($d);
+	$vval = $stats->{$vnam};
+	if (defined($vval)) {
+		$nlib->verb("Stats Line: $vnam = $vval");
+		if (exists($KNOWN_STATUS_VARS{$vnam}) && $KNOWN_STATUS_VARS{$vnam}[1] eq 'VERSION') {
+			$dbversion .= $vval;
+		} elsif ($vnam =~ /^db\d+$/) {
+			$dbs{$vnam}= {'name'=>$vnam};
+			foreach (split(/,/,$vval)) {
+				my ($k, $d) = split(/=/,$_);
+				$nlib->add_data($vnam.'_'.$k, $d); 
+				$dbs{$vnam}{$k}=$d;
+				$nlib->verb(" - stats data added: ".$vnam.'_'.$k.' = '.$d);
+				$total_keys		+= $d 	if $k eq 'keys' 	&& Naglio::isnum($d);
+				$total_expires	+= $d 	if $k eq 'expires' 	&& Naglio::isnum($d);
+			}
+		} elsif ($vnam =~ /~slave/) {
+			# TODO TODO TODO TODO
+		} else {
+			$nlib->add_data($vnam, $vval);
 		}
+	} else {
+		$nlib->verb("Stats Data: $vnam = NULL");
 	}
-	elsif ($vnam =~ /~slave/) {
-		# TODO TODO TODO TODO
-	}
-	else {
-		$nlib->add_data($vnam, $vval);
-   	}
-     }
-     else {
-        $nlib->verb("Stats Data: $vnam = NULL");
-     }
 }
 $nlib->verb("Calculated Data: total_keys=".$total_keys);
 $nlib->verb("Calculated Data: total_expires=".$total_expires);
-$nlib->add_data('total_keys',$total_keys);
-$nlib->add_data('total_expires',$total_expires);
+$nlib->add_data('total_keys', $total_keys);
+$nlib->add_data('total_expires', $total_expires);
 
 # Response Time
 if (defined($o_timecheck)) {
@@ -2867,32 +2867,37 @@ if (defined($o_repdelay) && defined($nlib->vardata('master_last_io_seconds_ago')
     }
 }
 
-# Memory Use Utilization
+####################################################################################################
+####################################################################################################
+##
+## Memory
+##
+####################################################################################################
+####################################################################################################
 if (defined($o_memutilization) && defined($nlib->vardata('used_memory_rss'))) {
-    if (defined($o_totalmemory)) {
-        $nlib->add_data('memory_utilization',$nlib->vardata('used_memory_rss')/$o_totalmemory*100);
-	$nlib->verb('memory utilization % : '.$nlib->vardata('memory_utilization').' = '.$nlib->vardata('used_memory_rss').' (used_memory_rss) / '.$o_totalmemory.' * 100');
-    }
-    elsif ($o_memutilization ne '') {
-	print "ERROR: Can not calculate memory utilization if you do not specify total memory on a system (-M option)\n";
-	print_usage();
-	exit $ERRORS{"UNKNOWN"};
-    }
-    if (defined($o_perf) && defined($nlib->vardata('memory_utilization'))) {
-	$nlib->set_perfdata('memory_utilization',sprintf(" memory_utilization=%.4f", $nlib->vardata('memory_utilization')),'%');
-    }
-    if (defined($nlib->vardata('used_memory_human')) && defined($nlib->vardata('used_memory_peak_human'))) {
-	my $sdata="memory use is ".$nlib->vardata('used_memory_human')." (";
-	$sdata.='peak '.$nlib->vardata('used_memory_peak_human');
-	if (defined($nlib->vardata('memory_utilization'))) {
-		$sdata.= sprintf(", %.2f%% of max", $nlib->vardata('memory_utilization'));
+	if (defined($o_totalmemory)) {
+		$nlib->add_data('memory_utilization',$nlib->vardata('used_memory_rss')/$o_totalmemory*100);
+		$nlib->verb('memory utilization % : '.$nlib->vardata('memory_utilization').' = '.$nlib->vardata('used_memory_rss').' (used_memory_rss) / '.$o_totalmemory.' * 100');
+	} elsif ($o_memutilization ne '') {
+		print "ERROR: Can not calculate memory utilization if you do not specify total memory on a system (-M option)\n";
+		print_usage();
+		exit $ERRORS{"UNKNOWN"};
 	}
-	if (defined($nlib->vardata('mem_fragmentation_ratio'))) {
-		$sdata.=", fragmentation ".$nlib->vardata('mem_fragmentation_ratio').'%';
+	if (defined($o_perf) && defined($nlib->vardata('memory_utilization'))) {
+		$nlib->set_perfdata('memory_utilization',sprintf(" memory_utilization=%.4f", $nlib->vardata('memory_utilization')),'%');
 	}
-	$sdata.=")";
-	$nlib->addto_statusdata_output('memory_utilization',$sdata);
-    }
+	if (defined($nlib->vardata('used_memory_human')) && defined($nlib->vardata('used_memory_peak_human'))) {
+		my $sdata="memory use is ".$nlib->vardata('used_memory_human')." (";
+		$sdata.='peak '.$nlib->vardata('used_memory_peak_human');
+		if (defined($nlib->vardata('memory_utilization'))) {
+			$sdata.= sprintf(", %.2f%% of max", $nlib->vardata('memory_utilization'));
+		}
+		if (defined($nlib->vardata('mem_fragmentation_ratio'))) {
+			$sdata.=", fragmentation ".$nlib->vardata('mem_fragmentation_ratio').'%';
+		}
+		$sdata.=")";
+		$nlib->addto_statusdata_output('memory_utilization',$sdata);
+	}
 }
 
 # Check thresholds in all variables and prepare status and performance data for output

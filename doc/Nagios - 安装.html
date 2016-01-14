@@ -1,0 +1,16 @@
+<h2>1. 安装</h2>
+<pre>
+# yum install -y nagios nagios-devel nagios-plugins*
+# yum install -y gd gd-devel httpd php gcc glibc glibc-common
+</pre>
+
+<h2>2. 访问</h2>
+<p>http://www.chenliujin.com/nagios</p>
+<p>User: nagiosadmin</p>
+<p>Pass: nagiosadmin</p>
+
+<h2>3. 修改密码</h2>
+<pre>
+# htpasswd -c /etc/nagios/passwd nagiosadmin
+</pre>
+<p>如果修改了用户名，需替换 /etc/nagios/cgi.cfg 中的用户名 nagiosadmin</p>

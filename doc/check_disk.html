@@ -1,3 +1,15 @@
+<h1>安装</h1>
+<pre>
+# yum install -y nagios-plugins-disk	
+</pre>
+
+<h1>Example:</h1>
+<pre>
+# check_disk -w 10% -c 5% -p /tmp -p /var -C -w 100000 -c 50000 -p /
+监控 /tmp 和 /var，当磁盘空间小于 10% 和 5% 时报警，同时监控 / ，当磁盘空间小于 100M 和 50M 时报警。
+</pre>
+
+<h1>Help:</h1>
 <pre>
 check_disk v2.0.3 (nagios-plugins 2.0.3)
 Copyright (c) 1999 Ethan Galstad &lt;nagios@nagios.org&gt;
@@ -94,10 +106,4 @@ Examples:
 Send email to help@nagios-plugins.org if you have questions regarding use
 of this software. To submit patches or suggest improvements, send email to
 devel@nagios-plugins.org
-</pre>
-
-<h1>Example:</h1>
-<pre>
-# check_disk -w 10% -c 5% -p /tmp -p /var -C -w 100000 -c 50000 -p /
-监控 /tmp 和 /var，当磁盘空间小于 10% 和 5% 时报警，同时监控 / ，当磁盘空间小于 100M 和 50M 时报警。
 </pre>

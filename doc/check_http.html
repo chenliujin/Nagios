@@ -5,6 +5,7 @@
 
 <h2>Check Tomcat Status | Check Solr</h2>
 <pre>
+# 访问 Solr 的 API http://www.chenliujin.com:8888/solr/product/select?q=*%3A*&wt=json&indent=true 检查 http status 是否是 200
 # /usr/lib64/nagios/plugins/check_http -H www.chenliujin.com -p 8888 -u	"/solr/product/select?q=*%3A*&wt=json&indent=true" -e 200
 </pre>
 

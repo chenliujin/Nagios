@@ -1,0 +1,169 @@
+<h2>°²×° check_http ²å¼þ</h2>
+<pre>
+# yum install -y nagios-plugins-http
+</pre>
+
+<h2>Check Tomcat Status | Check Solr</h2>
+<pre>
+# /usr/lib64/nagios/plugins/check_http -H www.chenliujin.com -p 8080 -u	"/solr/product/select?q=*%3A*&wt=json&indent=true" -e 200
+</pre>
+
+<h2>Help</h2>
+<pre>
+check_http v2.0.3 (nagios-plugins 2.0.3)
+Copyright (c) 1999 Ethan Galstad &lt;nagios@nagios.org&gt;
+Copyright (c) 1999-2014 Nagios Plugin Development Team
+        &lt;devel@nagios-plugins.org&gt;
+
+This plugin tests the HTTP service on the specified host. It can test
+normal (http) and secure (https) servers, follow redirects, search for
+strings and regular expressions, check connection times, and report on
+certificate expiration times.
+
+
+Usage:
+ check_http -H &lt;vhost&gt; | -I &lt;IP-address&gt; [-u &lt;uri&gt;] [-p &lt;port&gt;]
+       [-J &lt;client certificate file&gt;] [-K &lt;private key&gt;]
+       [-w &lt;warn time&gt;] [-c &lt;critical time&gt;] [-t &lt;timeout&gt;] [-L] [-E] [-a auth]
+       [-b proxy_auth] [-f &lt;ok|warning|critcal|follow|sticky|stickyport&gt;]
+       [-e &lt;expect&gt;] [-d string] [-s string] [-l] [-r &lt;regex&gt; | -R &lt;case-insensitive regex&gt;]
+       [-P string] [-m &lt;min_pg_size&gt;:&lt;max_pg_size&gt;] [-4|-6] [-N] [-M &lt;age&gt;]
+       [-A string] [-k string] [-S &lt;version&gt;] [--sni] [-C &lt;warn_age&gt;[,&lt;crit_age&gt;]]
+       [-T &lt;content-type&gt;] [-j method]
+NOTE: One or both of -H and -I must be specified
+
+Options:
+ -h, --help
+    Print detailed help screen
+ -V, --version
+    Print version information
+ --extra-opts=[section][@file]
+    Read options from an ini file. See
+    https://www.nagios-plugins.org/doc/extra-opts.html
+    for usage and examples.
+<strong>-H, --hostname=ADDRESS</strong>
+    Host name argument for servers using host headers (virtual host)
+    Append a port to include it in the header (eg: example.com:5000)
+ -I, --IP-address=ADDRESS
+    IP address or name (use numeric address if possible to bypass DNS lookup).
+ <strong>-p, --port=INTEGER</strong>
+    Port number (default: 80)
+ -4, --use-ipv4
+    Use IPv4 connection
+ -6, --use-ipv6
+    Use IPv6 connection
+ -S, --ssl=VERSION
+    Connect via SSL. Port defaults to 443. VERSION is optional, and prevents
+    auto-negotiation (1 = TLSv1, 2 = SSLv2, 3 = SSLv3).
+ --sni
+    Enable SSL/TLS hostname extension support (SNI)
+ -C, --certificate=INTEGER[,INTEGER]
+    Minimum number of days a certificate has to be valid. Port defaults to 443
+    (when this option is used the URL is not checked.)
+ -J, --client-cert=FILE
+   Name of file that contains the client certificate (PEM format)
+   to be used in establishing the SSL session
+ -K, --private-key=FILE
+   Name of file containing the private key (PEM format)
+   matching the client certificate
+ <strong>-e, --expect=STRING</strong>
+    Comma-delimited list of strings, at least one of them is expected in
+    the first (status) line of the server response (default: HTTP/1.)
+    If specified skips all other status line logic (ex: 3xx, 4xx, 5xx processing)
+ -d, --header-string=STRING
+    String to expect in the response headers
+ -s, --string=STRING
+    String to expect in the content
+ <strong>-u, --url=PATH</strong>
+    URL to GET or POST (default: /)
+ -P, --post=STRING
+    URL encoded http POST data
+ -j, --method=STRING  (for example: HEAD, OPTIONS, TRACE, PUT, DELETE)
+    Set HTTP method.
+ -N, --no-body
+    Don't wait for document body: stop reading after headers.
+    (Note that this still does an HTTP GET or POST, not a HEAD.)
+ -M, --max-age=SECONDS
+    Warn if document is more than SECONDS old. the number can also be of
+    the form "10m" for minutes, "10h" for hours, or "10d" for days.
+ -T, --content-type=STRING
+    specify Content-Type header media type when POSTing
+
+ -l, --linespan
+    Allow regex to span newlines (must precede -r or -R)
+ -r, --regex, --ereg=STRING
+    Search page for regex STRING
+ -R, --eregi=STRING
+    Search page for case-insensitive regex STRING
+ --invert-regex
+    Return CRITICAL if found, OK if not
+
+ -a, --authorization=AUTH_PAIR
+    Username:password on sites with basic authentication
+ -b, --proxy-authorization=AUTH_PAIR
+    Username:password on proxy-servers with basic authentication
+ -A, --useragent=STRING
+    String to be sent in http header as "User Agent"
+ -k, --header=STRING
+    Any other tags to be sent in http header. Use multiple times for additional headers
+ -E, --extended-perfdata
+    Print additional performance data
+ -L, --link
+    Wrap output in HTML link (obsoleted by urlize)
+ -f, --onredirect=&lt;ok|warning|critical|follow|sticky|stickyport&gt;
+    How to handle redirected pages. sticky is like follow but stick to the
+    specified IP address. stickyport also ensures port stays the same.
+ -m, --pagesize=INTEGER&lt;:INTEGER&gt;
+    Minimum page size required (bytes) : Maximum page size required (bytes)
+ <strong>-w, --warning=DOUBLE</strong>
+    Response time to result in warning status (seconds)
+ <strong>-c, --critical=DOUBLE</strong>
+    Response time to result in critical status (seconds)
+ -t, --timeout=INTEGER
+    Seconds before connection times out (default: 10)
+ -v, --verbose
+    Show details for command-line debugging (Nagios may truncate output)
+
+Notes:
+ This plugin will attempt to open an HTTP connection with the host.
+ Successful connects return STATE_OK, refusals and timeouts return STATE_CRITICAL
+ other errors return STATE_UNKNOWN.  Successful connects, but incorrect reponse
+ messages from the host result in STATE_WARNING return values.  If you are
+ checking a virtual server that uses 'host headers' you must supply the FQDN
+ (fully qualified domain name) as the [host_name] argument.
+
+ This plugin can also check whether an SSL enabled web server is able to
+ serve content (optionally within a specified time) or whether the X509
+ certificate is still valid for the specified number of days.
+
+ Please note that this plugin does not check if the presented server
+ certificate matches the hostname of the server, or if the certificate
+ has a valid chain of trust to one of the locally installed CAs.
+
+Examples:
+ <strong>CHECK CONTENT: check_http -w 5 -c 10 --ssl -H www.verisign.com</strong>
+
+ When the 'www.verisign.com' server returns its content within 5 seconds,
+ a STATE_OK will be returned. When the server returns its content but exceeds
+ the 5-second threshold, a STATE_WARNING will be returned. When an error occurs,
+ a STATE_CRITICAL will be returned.
+
+ <strong>CHECK CERTIFICATE: check_http -H www.verisign.com -C 14</strong>
+
+ When the certificate of 'www.verisign.com' is valid for more than 14 days,
+ a STATE_OK is returned. When the certificate is still valid, but for less than
+ 14 days, a STATE_WARNING is returned. A STATE_CRITICAL will be returned when
+ the certificate is expired.
+
+ <strong>CHECK CERTIFICATE: check_http -H www.verisign.com -C 30,14</strong>
+
+ When the certificate of 'www.verisign.com' is valid for more than 30 days,
+ a STATE_OK is returned. When the certificate is still valid, but for less than
+ 30 days, but more than 14 days, a STATE_WARNING is returned.
+ A STATE_CRITICAL will be returned when certificate expires in less than 14 days
+
+Send email to help@nagios-plugins.org if you have questions regarding use
+of this software. To submit patches or suggest improvements, send email to
+devel@nagios-plugins.org
+	
+</pre>

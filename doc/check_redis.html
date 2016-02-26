@@ -88,3 +88,14 @@ define service {
 	notification_interval   5
 }	
 </pre>
+
+<h2>Redis</h2>
+<ul>
+	<li>connected_clients：链接数</li>
+	<li>instantaneous_ops_per_sec：每秒执行命令数</li>
+	<li>used_memory：内存使用</li>
+	<li>used_memory_peak：内存使用（峰值）</li>
+</ul>
+<pre>
+command[check_redis]=/usr/lib64/nagios/plugins/check_redis.pl -H 172.16.64.150 -p 6379 -a 'connected_clients,instantaneous_ops_per_sec,used_memory,used_memory_peak' -w ~,~,~,~ -c ~,~,~,~ -f	
+</pre>

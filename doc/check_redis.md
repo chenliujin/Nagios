@@ -89,13 +89,17 @@ define service {
 }
 </pre>
 
-<h2>Redis</h2>
-<ul>
-	<li>connected_clients：链接数</li>
-	<li>instantaneous_ops_per_sec：每秒执行命令数</li>
-	<li>used_memory：内存使用</li>
-	<li>used_memory_peak：内存使用（峰值）</li>
-</ul>
-<pre>
+## Redis KPI
+* connected_clients：链接数
+* instantaneous_ops_per_sec：每秒处理命令数。redis_version:2.8.19 有，redis_version:2.4.10 没有，使用前检查下是否能取到该值
+* used_memory：内存使用
+* used_memory_peak：内存使用（峰值）
+
+### NRPE
+```
 command[check_redis]=/usr/lib64/nagios/plugins/check_redis.pl -H 172.16.64.150 -p 6379 -a 'connected_clients,instantaneous_ops_per_sec,used_memory,used_memory_peak' -w ~,~,~,~ -c ~,~,~,~ -f
-</pre>
+```
+
+### Nagios
+```
+```

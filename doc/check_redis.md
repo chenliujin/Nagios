@@ -1,6 +1,6 @@
-<h1>ÒÀÀµ°ü</h1>
+<h1>ä¾èµ–åŒ…</h1>
 <pre>
-# yum install -y perl-Redis	
+# yum install -y perl-Redis
 </pre>
 
 <h1>connected_clients</h1>
@@ -9,11 +9,11 @@
 # vim /etc/nrpe.d/check-redis.cfg
 command[check_redis_connected_clients]=/usr/lib64/nagios/plugins/check_redis -H 127.0.0.1 -p 6379 -a 'connected_clients' -w ~ -c ~ -f
 
-# ÖØÆô·şÎñ
+# é‡å¯æœåŠ¡
 # service nrpe restart
 </pre>
 
-<h2>* ¼ì²é´úÀíÊÇ·ñ¹¤×÷</h2>
+<h2>* æ£€æŸ¥ä»£ç†æ˜¯å¦å·¥ä½œ</h2>
 <pre>
 # /usr/lib64/nagios/plugins/check_nrpe -H 127.0.0.1 -c check_redis_connected_clients
 OK: REDIS 2.4.10 on 127.0.0.1:6381 has 1 databases (db0) with 10515 keys, up 14 days 16 hours - connected_clients is 26 | connected_clients=26
@@ -29,7 +29,7 @@ define service {
     host_name               www.chenliujin.com
 	normal_check_interval   5
 	notification_interval   5
-}	
+}
 </pre>
 
 <h1>Memory</h1>
@@ -39,7 +39,7 @@ define service {
 command[check_redis_memory]=/usr/lib64/nagios/plugins/check_redis.pl -H 127.0.0.1 -p 6379 -a 'used_memory,used_memory_peak' -w ~,~ -c ~,~ -f
 </pre>
 
-<h2>* ¼ì²é´úÀíÊÇ·ñ¹¤×÷</h2>
+<h2>* æ£€æŸ¥ä»£ç†æ˜¯å¦å·¥ä½œ</h2>
 <pre>
 # /usr/lib64/nagios/plugins/check_nrpe -H 127.0.0.1 -c check_redis_memory
 OK: REDIS 2.8.19 on 172.16.64.150:6379 has 2 databases (db3,db15) with 61 keys, up 6 hours 58 minutes - used_memory is 854392, used_memory_peak is 855416 | used_memory=854392 used_memory_peak=855416
@@ -55,22 +55,22 @@ define service {
     host_name               www.chenliujin.com
 	normal_check_interval   5
 	notification_interval   5
-}	
+}
 </pre>
 
 <h1>Keyspace</h1>
-<p>Session Ê¹ÓÃ Redis ×÷Îª´æ´¢£¬¼à¿Ø¶ÔÓ¦ DB µÄ key ¸öÊı£¬¿ÉÒÔÖªµÀ Session µÄ±ä»¯Ç÷ÊÆ¡£check_redis.pl -H 127.0.0.1 -A ¿ÉÒÔ¿´µ½¼¯³ÉÁËdb0_keys, db0_expires, db0_avg_ttl, db1_keys...£¬ËùÒÔ¿ÉÒÔ»ñÈ¡¶ÔÓ¦ DB µÄ key ¸öÊı</p>
+<p>Session ä½¿ç”¨ Redis ä½œä¸ºå­˜å‚¨ï¼Œç›‘æ§å¯¹åº” DB çš„ key ä¸ªæ•°ï¼Œå¯ä»¥çŸ¥é“ Session çš„å˜åŒ–è¶‹åŠ¿ã€‚check_redis.pl -H 127.0.0.1 -A å¯ä»¥çœ‹åˆ°é›†æˆäº†db0_keys, db0_expires, db0_avg_ttl, db1_keys...ï¼Œæ‰€ä»¥å¯ä»¥è·å–å¯¹åº” DB çš„ key ä¸ªæ•°</p>
 
 <h2>* NRPE</h2>
 <pre>
 # vim /etc/nrpe.d/check-redis.cfg
 command[check_redis_db0_keys]=/usr/lib64/nagios/plugins/check_redis -H 127.0.0.1 -p 6379 -a 'db0_keys' -w ~ -c ~ -f
 
-# ÖØÆô·şÎñ
+# é‡å¯æœåŠ¡
 # service nrpe restart
 </pre>
 
-<h2>* ¼ì²é´úÀíÊÇ·ñ¹¤×÷</h2>
+<h2>* æ£€æŸ¥ä»£ç†æ˜¯å¦å·¥ä½œ</h2>
 <pre>
 # /usr/lib64/nagios/plugins/check_nrpe -H 127.0.0.1 -c check_redis_db0_keys
 OK: REDIS 2.8.19 on 172.16.64.150:6379 has 2 databases (db3,db15) with 61 keys, up 4 days 23 hours - db0_keys is 9 | db0_keys=9
@@ -86,16 +86,16 @@ define service {
     host_name               www.chenliujin.com
 	normal_check_interval   1
 	notification_interval   5
-}	
+}
 </pre>
 
 <h2>Redis</h2>
 <ul>
-	<li>connected_clients£ºÁ´½ÓÊı</li>
-	<li>instantaneous_ops_per_sec£ºÃ¿ÃëÖ´ĞĞÃüÁîÊı</li>
-	<li>used_memory£ºÄÚ´æÊ¹ÓÃ</li>
-	<li>used_memory_peak£ºÄÚ´æÊ¹ÓÃ£¨·åÖµ£©</li>
+	<li>connected_clientsï¼šé“¾æ¥æ•°</li>
+	<li>instantaneous_ops_per_secï¼šæ¯ç§’æ‰§è¡Œå‘½ä»¤æ•°</li>
+	<li>used_memoryï¼šå†…å­˜ä½¿ç”¨</li>
+	<li>used_memory_peakï¼šå†…å­˜ä½¿ç”¨ï¼ˆå³°å€¼ï¼‰</li>
 </ul>
 <pre>
-command[check_redis]=/usr/lib64/nagios/plugins/check_redis.pl -H 172.16.64.150 -p 6379 -a 'connected_clients,instantaneous_ops_per_sec,used_memory,used_memory_peak' -w ~,~,~,~ -c ~,~,~,~ -f	
+command[check_redis]=/usr/lib64/nagios/plugins/check_redis.pl -H 172.16.64.150 -p 6379 -a 'connected_clients,instantaneous_ops_per_sec,used_memory,used_memory_peak' -w ~,~,~,~ -c ~,~,~,~ -f
 </pre>
